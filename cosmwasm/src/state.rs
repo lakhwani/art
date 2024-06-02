@@ -15,6 +15,8 @@ pub struct Art {
 pub struct State {
     pub count: i32,
     pub owner: Addr,
+    pub art_counter: u64,
+    pub royalty_rate: u64,
 }
 
 pub const STATE: Item<State> = Item::new("state");
