@@ -14,20 +14,24 @@ contract ArtHouseBase is ReentrancyGuard {
     uint256 rfid;
   }
 
-  mapping (uint256 => Art) artGallery;
-  mapping (uint256 => address) artOwners;
+  mapping (uint256 => Art) private artGallery;
+  mapping (uint256 => address) private artOwners;
 
   event CreateArt(uint256 indexed artId, uint256 indexed rfid, uint256 indexed price);
-  event PurchaseArt(uint256 indexed artId, address indexed owner, address indexed buyer);
+  event PurchaseArt(uint256 indexed artId, address indexed previousOwner, address indexed newOwner, uint256 price);
   event RoyaltyPaid(uint256 indexed artId, address indexed owner, uint256 royaltyPaid);
   
   constructor(uint256 _royaltyRate) {
     owner = payable(msg.sender);
+    require(_royaltyRate <= 100, "Royalty rate must be between 0 and 100");
     royaltyRate = _royaltyRate;
   }
 
   function createArt(uint256 _price, uint256 _rfid) public {
     require(owner == msg.sender, "Not contract owner!");
+    require(_price > 0, "Price must be greater than zero");
+    require(_rfid > 0, "RFID must be greater than zero");
+
     artGallery[artCounter] = Art(artCounter, _price, _rfid);
     artOwners[artCounter] = msg.sender;
 
@@ -50,6 +54,6 @@ contract ArtHouseBase is ReentrancyGuard {
     require (paymentSent, "Failed to send payment");
 
     artOwners[_artId] = msg.sender;
-    emit PurchaseArt(_artId, owner, msg.sender);
+    emit PurchaseArt(_artId, previousOwner, msg.sender, msg.value);
   }
 }
