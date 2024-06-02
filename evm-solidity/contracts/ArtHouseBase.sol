@@ -20,6 +20,11 @@ contract ArtHouseBase is ReentrancyGuard {
   event CreateArt(uint256 indexed artId, uint256 indexed rfid, uint256 indexed price);
   event PurchaseArt(uint256 indexed artId, address indexed previousOwner, address indexed newOwner, uint256 price);
   event RoyaltyPaid(uint256 indexed artId, address indexed owner, uint256 royaltyPaid);
+
+  modifier artworkExists(uint256 _artId) {
+    require(_artId < artCounter, "Art does not exist!");
+    _;
+  }
   
   constructor(uint256 _royaltyRate) {
     owner = payable(msg.sender);
@@ -39,8 +44,7 @@ contract ArtHouseBase is ReentrancyGuard {
     artCounter++;
   }
 
-  function purchaseArt(uint256 _artId) payable public nonReentrant {
-    require (_artId < artCounter, "Not a real artwork!");
+  function purchaseArt(uint256 _artId) payable public artworkExists(_artId) nonReentrant {
     require (msg.value >= artGallery[_artId].price, "Insufficient balance!");
 
     uint256 royaltyAmount = (msg.value * royaltyRate) / 100;
@@ -55,5 +59,15 @@ contract ArtHouseBase is ReentrancyGuard {
 
     artOwners[_artId] = msg.sender;
     emit PurchaseArt(_artId, previousOwner, msg.sender, msg.value);
+  }
+
+  function getArt(uint256 _artId) public view artworkExists(_artId) returns (Art memory)  {
+    require(_artId < artCounter, "Artwork does not exist");
+    return artGallery[_artId];
+  }
+
+  function getArtOwner(uint256 _artId) public view artworkExists(_artId) returns (address) {
+    require(_artId < artCounter, "Artwork does not exist");
+    return artOwners[_artId];
   }
 }
