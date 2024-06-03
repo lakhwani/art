@@ -93,14 +93,14 @@ pub mod execute {
         }
 
         if balance.is_zero() {
-            return Err(ContractError::EmptyBalance {});
+            return Err(ContractError::EmptyDeposit {});
         }
 
-        BALANCES.save(deps.storage, sender, &balance)?;
+        BALANCES.save(deps.storage, sender.clone(), &balance)?;
 
         Ok(Response::new()
             .add_attribute("action", "deposit")
-            .add_attribute("account", info.sender.to_string())
+            .add_attribute("account", sender.to_string())
             .add_attribute("amount", balance.clone()))
     }
 
@@ -110,13 +110,16 @@ pub mod execute {
         amount: Uint128,
     ) -> Result<Response, ContractError> {
         let sender = info.sender.clone();
-        let balance = BALANCES
+        let mut balance = BALANCES
             .may_load(deps.storage, sender.clone())?
             .unwrap_or_default();
 
         if amount > balance {
             return Err(ContractError::InsufficientBalance {});
         }
+
+        balance -= amount;
+        BALANCES.save(deps.storage, sender.clone(), &balance)?;
 
         Ok(Response::new()
             .add_attribute("action", "withdraw")
@@ -138,7 +141,7 @@ pub mod execute {
     ) -> Result<Response, ContractError> {
         let owner = STATE.load(deps.storage)?.owner;
         let sender = info.sender.clone();
-        if owner == sender {
+        if owner != sender {
             return Err(ContractError::Unauthorized {});
         }
 
@@ -225,7 +228,7 @@ pub mod query {
 
 #[cfg(test)]
 mod tests {
-    use crate::msg::GetBalanceResponse;
+    use crate::msg::{GetArtOwnerResponse, GetArtResponse, GetBalanceResponse};
 
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
@@ -334,6 +337,151 @@ mod tests {
         // Query balance to ensure it is updated
         let balance_query = QueryMsg::GetBalance {
             addr: Addr::unchecked("depositor"),
+        };
+        let res = query(deps.as_ref(), mock_env(), balance_query).unwrap();
+        let value: GetBalanceResponse = from_json(&res).unwrap();
+        assert_eq!(Uint128::from(500u128), value.balance);
+    }
+
+    #[test]
+    fn withdraw() {
+        let mut deps = mock_dependencies();
+
+        let msg = InstantiateMsg {
+            count: 0,
+            royalty_rate: 5u64,
+        };
+        let creator = Addr::unchecked("creator");
+        let info = mock_info(&creator.to_string(), &coins(1000, "ucosm"));
+
+        // Instantiate the contract
+        let _res = instantiate(deps.as_mut(), mock_env(), info.clone(), msg).unwrap();
+
+        // Deposit funds to withdraw later
+        let depositor = Addr::unchecked("depositor");
+        let deposit_info = mock_info(&depositor.to_string(), &coins(500, "ucosm"));
+        let deposit_msg = ExecuteMsg::Deposit {};
+        let _res = execute(deps.as_mut(), mock_env(), deposit_info.clone(), deposit_msg).unwrap();
+
+        // Withdraw funds
+        let withdraw_msg = ExecuteMsg::Withdraw {
+            amount: Uint128::from(200u128),
+        };
+        let withdraw_info = mock_info(&depositor.to_string(), &[]);
+        let res = execute(
+            deps.as_mut(),
+            mock_env(),
+            withdraw_info.clone(),
+            withdraw_msg,
+        )
+        .unwrap();
+
+        // Check if the withdraw action was successful
+        assert_eq!(res.attributes.len(), 2);
+        assert_eq!(res.attributes[0].key, "action");
+        assert_eq!(res.attributes[0].value, "withdraw");
+
+        // Query balance to ensure it is updated
+        let balance_query = QueryMsg::GetBalance {
+            addr: Addr::unchecked("depositor"),
+        };
+        let res = query(deps.as_ref(), mock_env(), balance_query).unwrap();
+        let value: GetBalanceResponse = from_json(&res).unwrap();
+        assert_eq!(Uint128::from(300u128), value.balance);
+    }
+
+    #[test]
+    fn create_art() {
+        let mut deps = mock_dependencies();
+
+        let msg = InstantiateMsg {
+            count: 0,
+            royalty_rate: 5u64,
+        };
+        let creator = Addr::unchecked("creator");
+        let info = mock_info(&creator.to_string(), &coins(1000, "ucosm"));
+
+        // Instantiate the contract
+        let _res = instantiate(deps.as_mut(), mock_env(), info.clone(), msg).unwrap();
+
+        // Create a new art piece
+        let create_info = mock_info(&creator.to_string(), &[]);
+        let create_msg = ExecuteMsg::CreateArt {
+            price: Uint128::from(1000u128),
+            rfid: 12345u64,
+        };
+        let res = execute(deps.as_mut(), mock_env(), create_info.clone(), create_msg).unwrap();
+
+        // Check if the create action was successful
+        assert_eq!(res.attributes.len(), 2);
+        assert_eq!(res.attributes[0].key, "action");
+        assert_eq!(res.attributes[0].value, "create");
+        assert_eq!(res.attributes[1].key, "art_id");
+        assert_eq!(res.attributes[1].value, "0");
+
+        // Query the newly created art piece
+        let art_query = QueryMsg::GetArt { art_id: 0 };
+        let res = query(deps.as_ref(), mock_env(), art_query).unwrap();
+        let value: GetArtResponse = from_json(&res).unwrap();
+        assert_eq!(Uint128::from(1000u128), value.art.price);
+        assert_eq!(12345u64, value.art.rfid);
+    }
+
+    #[test]
+    fn purchase_art() {
+        let mut deps = mock_dependencies();
+
+        let msg = InstantiateMsg {
+            count: 0,
+            royalty_rate: 5u64,
+        };
+        let creator = Addr::unchecked("creator");
+        let info = mock_info(&creator.to_string(), &coins(1000, "ucosm"));
+
+        // Instantiate the contract
+        let _res = instantiate(deps.as_mut(), mock_env(), info.clone(), msg).unwrap();
+
+        // Create a new art piece
+        let create_info = mock_info(&creator.to_string(), &[]);
+        let create_msg = ExecuteMsg::CreateArt {
+            price: Uint128::from(1000u128),
+            rfid: 12345u64,
+        };
+        let _res = execute(deps.as_mut(), mock_env(), create_info.clone(), create_msg).unwrap();
+
+        // Deposit funds to purchase the art piece
+        let buyer = Addr::unchecked("buyer");
+        let deposit_info = mock_info(&buyer.to_string(), &coins(1500, "ucosm"));
+        let deposit_msg = ExecuteMsg::Deposit {};
+        let _res = execute(deps.as_mut(), mock_env(), deposit_info.clone(), deposit_msg).unwrap();
+
+        // Purchase the art piece
+        let purchase_info = mock_info(&buyer.to_string(), &[]);
+        let purchase_msg = ExecuteMsg::PurchaseArt { art_id: 0 };
+        let res = execute(
+            deps.as_mut(),
+            mock_env(),
+            purchase_info.clone(),
+            purchase_msg,
+        )
+        .unwrap();
+
+        // Check if the purchase action was successful
+        assert_eq!(res.attributes.len(), 2);
+        assert_eq!(res.attributes[0].key, "action");
+        assert_eq!(res.attributes[0].value, "purchase");
+        assert_eq!(res.attributes[1].key, "art_id");
+        assert_eq!(res.attributes[1].value, "0");
+
+        // Query the new owner of the art piece
+        let owner_query = QueryMsg::GetArtOwner { art_id: 0 };
+        let res = query(deps.as_ref(), mock_env(), owner_query).unwrap();
+        let value: GetArtOwnerResponse = from_json(&res).unwrap();
+        assert_eq!(buyer, value.owner);
+
+        // Query balance to ensure it is updated after the purchase
+        let balance_query = QueryMsg::GetBalance {
+            addr: Addr::unchecked("buyer"),
         };
         let res = query(deps.as_ref(), mock_env(), balance_query).unwrap();
         let value: GetBalanceResponse = from_json(&res).unwrap();

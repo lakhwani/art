@@ -58,12 +58,12 @@ mod tests {
         (app, cw_template_contract)
     }
 
-    mod count {
+    mod complete {
         use super::*;
         use crate::msg::ExecuteMsg;
 
         #[test]
-        fn count() {
+        fn complete() {
             let (mut app, cw_template_contract) = proper_instantiate();
 
             let msg = ExecuteMsg::Increment {};

@@ -10,7 +10,7 @@ pub enum ContractError {
     Unauthorized {},
 
     #[error("No coins sent")]
-    EmptyBalance {},
+    EmptyDeposit {},
 
     #[error("Insufficient Balance")]
     InsufficientBalance {},
