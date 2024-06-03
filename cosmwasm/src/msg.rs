@@ -1,6 +1,6 @@
 use crate::state::Art;
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Addr;
+use cosmwasm_std::{Addr, Uint128};
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -12,8 +12,10 @@ pub struct InstantiateMsg {
 pub enum ExecuteMsg {
     Increment {},
     Reset { count: i32 },
-    CreateArt { price: u64, rfid: u64 },
+    CreateArt { price: Uint128, rfid: u64 },
     PurchaseArt { art_id: u64 },
+    Deposit {},
+    Withdraw { amount: Uint128 },
 }
 
 #[cw_serde]
@@ -26,6 +28,8 @@ pub enum QueryMsg {
     GetArt { art_id: u64 },
     #[returns(GetCountResponse)]
     GetArtOwner { art_id: u64 },
+    #[returns(GetBalanceResponse)]
+    GetBalance { addr: Addr },
 }
 
 // We define a custom struct for each query response
@@ -42,4 +46,9 @@ pub struct GetArtResponse {
 #[cw_serde]
 pub struct GetArtOwnerResponse {
     pub owner: Addr,
+}
+
+#[cw_serde]
+pub struct GetBalanceResponse {
+    pub balance: Uint128,
 }
