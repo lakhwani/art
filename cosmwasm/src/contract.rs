@@ -228,9 +228,8 @@ pub mod query {
 
 #[cfg(test)]
 mod tests {
-    use crate::msg::{GetArtOwnerResponse, GetArtResponse, GetBalanceResponse};
-
     use super::*;
+    use crate::msg::{GetArtOwnerResponse, GetArtResponse, GetBalanceResponse};
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
     use cosmwasm_std::{coins, from_json, Addr, Uint128};
 
