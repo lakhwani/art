@@ -1,6 +1,6 @@
 # Art House
 
-Welcome to the Art House repository! This project is designed to create a decentralized platform for managing and trading digital art using blockchain technology. The repository contains two main components: a CosmWasm smart contract and an EVM (Ethereum Virtual Machine) smart contract.
+Welcome to the Art House repository! This project is designed to create a decentralized platform for managing and trading digital art using blockchain technology with integration with RFID tags as an identifier and bridge to its real world asset. The repository contains two main components: a CosmWasm smart contract and an EVM (Ethereum Virtual Machine) smart contract.
 
 ## Repository Structure
 
