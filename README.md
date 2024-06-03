@@ -1,13 +1,13 @@
 # Art House
 
-Welcome to the Art House repository! This project is designed to create a decentralized platform for managing and trading digital art using blockchain technology with integration with RFID tags as an identifier and bridge to its real world asset. The repository contains two main components: a CosmWasm smart contract and an EVM (Ethereum Virtual Machine) smart contract.
+This project is designed to be a prototype for a decentralized platform for managing and trading digital art using blockchain technology with integration with RFID tags as an identifier and bridge to its real world asset. The repository contains two main components: a CosmWasm smart contract in Rust and an EVM (Ethereum Virtual Machine) smart contract in Solidity.
 
 ## Repository Structure
 
 The repository is organized into two main folders:
 
-- **cosmwasm**: Contains the CosmWasm smart contracts and related code for the Art House project written in Rust.
-- **evm-solidity**: Contains the Solidity smart contracts for deploying the Art House on Ethereum-compatible blockchains.
+- **cosmwasm**: Contains the CosmWasm smart contract and related code for the Art House project written in Rust.
+- **evm-solidity**: Contains the Solidity smart contract for deploying the Art House on Ethereum-compatible blockchains.
 
 ## Getting Started
 
