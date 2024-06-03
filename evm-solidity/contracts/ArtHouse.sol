@@ -106,11 +106,9 @@ contract ArtHouse is Ownable, ReentrancyGuard {
         arts[_artId].owner = msg.sender;
         arts[_artId].forSale = false;
 
-        // Using 'call' to send Ether and checking the success status
         (bool sent, ) = payable(previousOwner).call{value: msg.value}("");
         require(sent, "Failed to send Ether");
 
-        // Update ownership mappings
         _removeArtFromOwner(previousOwner, _artId);
         ownerToArtIds[msg.sender].push(_artId);
 
@@ -118,17 +116,14 @@ contract ArtHouse is Ownable, ReentrancyGuard {
         emit OwnershipTransferred(previousOwner, msg.sender, _artId);
     }
 
-    // Secure withdrawal function for the contract owner
     function withdrawFunds() public onlyOwner {
         uint256 balance = address(this).balance;
         require(balance > 0, "No funds to withdraw");
 
-        // Using 'call' to withdraw all funds and checking the success status
         (bool sent, ) = msg.sender.call{value: balance}("");
         require(sent, "Failed to send Ether");
     }
 
-    // Internal function to remove art from the owner's list
     function _removeArtFromOwner(address _owner, uint256 _artId) internal {
         uint256[] storage artIds = ownerToArtIds[_owner];
         for (uint256 i = 0; i < artIds.length; i++) {
